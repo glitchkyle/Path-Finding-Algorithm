@@ -47,13 +47,7 @@ class Algorithm(object):
                 
 
                 # Finding cheapest F cost node
-                currentNode = self.openList[0]
-                for node in self.openList:
-                    if node.f == currentNode.f:
-                        if node.g < currentNode.g:
-                            currentNode = node
-                    elif node.f < currentNode.f:
-                        currentNode = node
+                currentNode = self.findCheapestNode()
 
                 if currentNode == self.nodeEnd:
                     self.nodeEnd.parent = currentNode.parent
@@ -65,19 +59,7 @@ class Algorithm(object):
                 # Get Neighbors
 
                 # Get index of current node in grid 
-                found = False
-                x, y, i, j = 0, 0, 0, 0 
-                for row in self.gridObject.grid:
-                    for node in row:
-                        if node == currentNode:
-                            found = True
-                            x, y = i, j
-                            break
-                        j += 1
-                    if found:
-                        break
-                    j = 0
-                    i += 1
+                x, y = self.findNodeIndex(currentNode)
             
                 # Top Center
                 if (x - 1 >= 0 and x - 1 < self.gridObject.totalRows) and (y >= 0 and y < self.gridObject.totalColumns):
@@ -99,15 +81,12 @@ class Algorithm(object):
                 
                 pygame.display.update()
             
-            # Once target node found, recursively go back to start
+            # Recursively go back to start if target node found
             if self.nodeEnd.parent != None:
                 currentNode = self.nodeEnd.parent
                 while currentNode is not self.nodeStart:
                     currentNode.changeNode(PURPLE)
                     currentNode = currentNode.parent
-                print("Path found")
-            else:
-                print("Path not found")
             
             self.running = False
 
@@ -121,6 +100,31 @@ class Algorithm(object):
             searchNode.calculateFCost()
             if searchNode not in self.openList and searchNode not in self.closedList:
                 self.openList.append(searchNode) 
+    
+    def findCheapestNode(self):
+        searchNode = self.openList[0]
+        for node in self.openList:
+            if node.f == searchNode.f:
+                if node.g < searchNode.g:
+                    searchNode = node
+            elif node.f < searchNode.f:
+                searchNode = node
+        return searchNode
+
+    def findNodeIndex(self, searchNode):
+        x, y = 0, 0
+        found = False
+        for row in self.gridObject.grid:
+            for node in row:
+                if node == searchNode:
+                    found = True
+                    break
+                y += 1
+            if found:
+                break
+            x += 1
+            y = 0
+        return x, y
 
 class Node(object):
     def __init__(self, position=None, wall=False, color=GREY):
@@ -133,7 +137,7 @@ class Node(object):
 
         # Visualization Tool Variables
         self.color = color # Node color for visualization tool
-        self.unique = False
+        self.unique = False # Boolean for if node is either a wall, start, or end node
     
     def calculateGCost(self, parentNode, moveCost=10):
         self.g = parentNode.g + moveCost
@@ -168,6 +172,7 @@ class Grid(object):
         self.totalColumns = totalRows # Number of columns on grid
         self.gap = width // totalRows # Size of nodes
 
+    # Instantiate nodes for grid
     def createGrid(self):
         for row in range(self.totalRows):
             tempRowArray = []
@@ -176,6 +181,7 @@ class Grid(object):
                 tempRowArray.append(newNode)
             self.grid.append(tempRowArray)
 
+    # Draw the grid through pygame
     def drawGrid(self):
         for row in self.grid:
             for node in row:
@@ -185,13 +191,13 @@ class Grid(object):
                 else:
                     pygame.draw.rect(self.window, node.color, newRect)
 
+    # Retrieves the node corresponding to the mouse position
     def getMousePosNode(self, mousePosition):
         return self.grid[mousePosition[0] // self.gap][mousePosition[1] // self.gap]
     
     def changeGridNode(self, node, color):
         node.changeNode(color)
             
-
 def main():
     running = True
 
@@ -205,15 +211,19 @@ def main():
             if event.type == pygame.QUIT:
                 running = False    
 
+            # If user pressed left mouse button
             if pygame.mouse.get_pressed()[0]:
                 mousePosX, mousePosY = pygame.mouse.get_pos()
                 node = grid.getMousePosNode((mousePosX, mousePosY))
+                # If node is empty
                 if node.unique == False:
+                    # If start node does not exist, make this node the start node
                     if pathAlgorithm.nodeStart == None:
                         node.unique = True
                         pathAlgorithm.nodeStart = node
                         pathAlgorithm.nodeStart.g = 0
                         grid.changeGridNode(node, YELLOW)
+                    # If end nodes does  not exist, make this node the end node
                     elif pathAlgorithm.nodeEnd == None:
                         node.unique = True
                         pathAlgorithm.nodeEnd = node
@@ -223,6 +233,7 @@ def main():
                         node.unique = True
                         grid.changeGridNode(node, BLACK)
             
+            # If user pressed right mouse button, reset the node
             if pygame.mouse.get_pressed()[2]:
                 mousePosX, mousePosY = pygame.mouse.get_pos()
                 node = grid.getMousePosNode((mousePosX, mousePosY))
@@ -233,6 +244,7 @@ def main():
                     pathAlgorithm.nodeEnd = None
                 grid.changeGridNode(node, GREY)
 
+            # If user pressed space, run the algorithm
             if event.type == pygame.KEYDOWN and pathAlgorithm.running == False:
                 if event.key == pygame.K_SPACE:
                     if pathAlgorithm.nodeStart != None and pathAlgorithm.nodeEnd != None:
