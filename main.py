@@ -113,18 +113,14 @@ class Algorithm(object):
 
     def findNodeIndex(self, searchNode):
         x, y = 0, 0
-        found = False
         for row in self.gridObject.grid:
             for node in row:
                 if node == searchNode:
-                    found = True
-                    break
+                    return x, y
                 y += 1
-            if found:
-                break
             x += 1
             y = 0
-        return x, y
+        
 
 class Node(object):
     def __init__(self, position=None, wall=False, color=GREY):
@@ -191,6 +187,12 @@ class Grid(object):
                 else:
                     pygame.draw.rect(self.window, node.color, newRect)
 
+    # Reset the grid
+    def resetGrid(self):
+        for row in self.grid:
+            for node in row:
+                node.resetNode()
+
     # Retrieves the node corresponding to the mouse position
     def getMousePosNode(self, mousePosition):
         return self.grid[mousePosition[0] // self.gap][mousePosition[1] // self.gap]
@@ -211,44 +213,46 @@ def main():
             if event.type == pygame.QUIT:
                 running = False    
 
-            # If user pressed left mouse button
-            if pygame.mouse.get_pressed()[0]:
-                mousePosX, mousePosY = pygame.mouse.get_pos()
-                node = grid.getMousePosNode((mousePosX, mousePosY))
-                # If node is empty
-                if node.unique == False:
-                    # If start node does not exist, make this node the start node
-                    if pathAlgorithm.nodeStart == None:
-                        node.unique = True
-                        pathAlgorithm.nodeStart = node
-                        pathAlgorithm.nodeStart.g = 0
-                        grid.changeGridNode(node, YELLOW)
-                    # If end nodes does  not exist, make this node the end node
-                    elif pathAlgorithm.nodeEnd == None:
-                        node.unique = True
-                        pathAlgorithm.nodeEnd = node
-                        pathAlgorithm.nodeStart.h = pathAlgorithm.nodeStart.calculateHCost(pathAlgorithm.nodeEnd)
-                        grid.changeGridNode(node, TURQUOISE)
-                    else:
-                        node.unique = True
-                        grid.changeGridNode(node, BLACK)
-            
-            # If user pressed right mouse button, reset the node
-            if pygame.mouse.get_pressed()[2]:
-                mousePosX, mousePosY = pygame.mouse.get_pos()
-                node = grid.getMousePosNode((mousePosX, mousePosY))
-                node.unique = False
-                if node == pathAlgorithm.nodeStart:
-                    pathAlgorithm.nodeStart = None
-                elif node == pathAlgorithm.nodeEnd:
-                    pathAlgorithm.nodeEnd = None
-                grid.changeGridNode(node, GREY)
+            if pathAlgorithm.running == False:
+                # If user pressed left mouse button
+                if pygame.mouse.get_pressed()[0]:
+                    mousePosX, mousePosY = pygame.mouse.get_pos()
+                    node = grid.getMousePosNode((mousePosX, mousePosY))
+                    # If node is empty
+                    if node.unique == False:
+                        # If start node does not exist, make this node the start node
+                        if pathAlgorithm.nodeStart == None:
+                            node.unique = True
+                            pathAlgorithm.nodeStart = node
+                            pathAlgorithm.nodeStart.g = 0
+                            grid.changeGridNode(node, YELLOW)
+                        # If end nodes does  not exist, make this node the end node
+                        elif pathAlgorithm.nodeEnd == None:
+                            node.unique = True
+                            pathAlgorithm.nodeEnd = node
+                            pathAlgorithm.nodeStart.h = pathAlgorithm.nodeStart.calculateHCost(pathAlgorithm.nodeEnd)
+                            grid.changeGridNode(node, TURQUOISE)
+                        else:
+                            node.unique = True
+                            grid.changeGridNode(node, BLACK)
+                
+                # If user pressed right mouse button, reset the node
+                if pygame.mouse.get_pressed()[2]:
+                    mousePosX, mousePosY = pygame.mouse.get_pos()
+                    node = grid.getMousePosNode((mousePosX, mousePosY))
+                    node.unique = False
+                    if node == pathAlgorithm.nodeStart:
+                        pathAlgorithm.nodeStart = None
+                    elif node == pathAlgorithm.nodeEnd:
+                        pathAlgorithm.nodeEnd = None
+                    grid.changeGridNode(node, GREY)
 
-            # If user pressed space, run the algorithm
-            if event.type == pygame.KEYDOWN and pathAlgorithm.running == False:
-                if event.key == pygame.K_SPACE:
-                    if pathAlgorithm.nodeStart != None and pathAlgorithm.nodeEnd != None:
-                        pathAlgorithm.FindPath()
+                # If user pressed space, run the algorithm
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        if pathAlgorithm.nodeStart != None and pathAlgorithm.nodeEnd != None:
+                            pathAlgorithm.FindPath()
+        
         grid.drawGrid()
         pygame.display.update()
     pygame.quit()
